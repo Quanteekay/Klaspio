@@ -1,0 +1,13 @@
+{
+  "name": "klaspio-workspace",
+  "private": true,
+  "scripts": {
+    "start": "npm --prefix mobile-app run start",
+    "android": "npm --prefix mobile-app run android",
+    "ios": "npm --prefix mobile-app run ios",
+    "web": "npm --prefix mobile-app run web",
+    "build": "npm --prefix mobile-app run build",
+    "typecheck": "npm --prefix mobile-app run typecheck",
+    "test": "npm --prefix mobile-app run test"
+  }
+}

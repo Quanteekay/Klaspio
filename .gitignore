@@ -1,0 +1,60 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native (Expo prebuild output)
+/mobile-app/ios/
+/mobile-app/android/
+.kotlin/
+*.orig.*
+
+# Secrets / signing
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+login.txt
+
+# Environment files (keep .env.example committed)
+.env
+.env.*
+!.env.example
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Metro
+.metro-health-check*
+
+# debug / logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# TypeScript
+*.tsbuildinfo
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+*.swp
+
+#AI
+prompts.md
+.claude
+.codex

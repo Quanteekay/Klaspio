@@ -1,0 +1,148 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function myUser() {
+      return userDoc(request.auth.uid);
+    }
+
+    function isAdmin() {
+      return signedIn() && myUser().data.role == "admin";
+    }
+
+    function isTeacher() {
+      return signedIn() && myUser().data.role == "teacher";
+    }
+
+    function isParentOf(studentId) {
+      return signedIn()
+        && myUser().data.role == "parent"
+        && studentId in myUser().data.children;
+    }
+
+    function onlyChanged(keys) {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(keys);
+    }
+
+    function lessonHasStarted() {
+      return resource.data.date <= request.time;
+    }
+
+    function teacherOwnsLesson(lesson) {
+      return isTeacher() && lesson.data.teacherId == request.auth.uid;
+    }
+
+    match /users/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow create: if isAdmin() || (signedIn() && request.auth.uid == uid && request.resource.data.role == "student");
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.active == resource.data.active
+          && request.resource.data.children == resource.data.children
+        );
+      allow delete: if isAdmin();
+    }
+
+    match /Subjects/{subjectId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /Groups/{groupId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /ContentItems/{contentId} {
+      allow read: if signedIn()
+        && resource.data.active == true
+        && myUser().data.role in resource.data.visibleFor;
+      allow write: if isAdmin();
+    }
+
+    match /Messages/{messageId} {
+      allow read: if isAdmin()
+        || (signedIn() && request.auth.uid in resource.data.participantIds);
+      allow create: if signedIn()
+        && request.auth.uid == request.resource.data.senderId
+        && request.auth.uid in request.resource.data.participantIds
+        && request.resource.data.receiverId in request.resource.data.participantIds;
+      allow update, delete: if isAdmin();
+    }
+
+    match /Notifications/{notificationId} {
+      allow read: if isAdmin()
+        || (signedIn() && request.auth.uid in resource.data.targetUserIds);
+      allow create: if signedIn();
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && request.auth.uid in resource.data.targetUserIds
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(["readBy"])
+        );
+      allow delete: if isAdmin();
+    }
+
+    match /Lessons/{lessonId} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.teacherId == request.auth.uid)
+        || (signedIn() && request.auth.uid in resource.data.studentIds)
+        || (signedIn() && resource.data.studentIds.hasAny(myUser().data.children));
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (
+          teacherOwnsLesson(resource)
+          && lessonHasStarted()
+          && onlyChanged(["topic", "summary", "materials"])
+        );
+    }
+
+    match /Tasks/{taskId} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.teacherId == request.auth.uid)
+        || (signedIn() && resource.data.userId == request.auth.uid)
+        || isParentOf(resource.data.userId);
+      allow create: if isAdmin()
+        || (isTeacher() && request.resource.data.teacherId == request.auth.uid);
+      allow update: if isAdmin()
+        || (
+          isTeacher()
+          && resource.data.teacherId == request.auth.uid
+          && request.resource.data.teacherId == resource.data.teacherId
+        )
+        || (
+          signedIn()
+          && resource.data.userId == request.auth.uid
+          && resource.data.commited == false
+          && onlyChanged(["answerContent", "submittedAt"])
+        );
+      allow delete: if isAdmin();
+    }
+
+    match /Attendance/{attendanceId} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.studentId == request.auth.uid)
+        || isParentOf(resource.data.studentId)
+        || (
+          signedIn()
+          && get(/databases/$(database)/documents/Lessons/$(resource.data.lessonId)).data.teacherId == request.auth.uid
+        );
+      allow write: if isAdmin()
+        || (
+          signedIn()
+          && get(/databases/$(database)/documents/Lessons/$(request.resource.data.lessonId)).data.teacherId == request.auth.uid
+          && get(/databases/$(database)/documents/Lessons/$(request.resource.data.lessonId)).data.date <= request.time
+        );
+    }
+  }
+}
