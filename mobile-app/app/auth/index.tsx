@@ -39,7 +39,7 @@ export default function Index() {
 
   return (
     <Screen>
-      <ScreenHeader title="Zaloguj się" subtitle="Witaj w Klaspio" />
+      <ScreenHeader title="Zaloguj się" />
       <View style={{ paddingHorizontal: 20, gap: 14 }}>
         <TextField
           label="Email"
@@ -83,11 +83,6 @@ export default function Index() {
             title={isLoading ? "Logowanie..." : "Zaloguj"}
             onPress={signIn}
             loading={isLoading}
-          />
-          <Button
-            title="Utwórz konto"
-            variant="soft"
-            onPress={() => router.push("/auth/register")}
           />
           <Button
             title="Wejdź jako gość"

@@ -24,8 +24,6 @@ type ParentTilePath =
   | "/parent/attendance"
   | "/parent/homework"
   | "/parent/calendar"
-  | "/parent/profile"
-  | "/notifications"
   | "/content";
 
 type Tile = {
@@ -72,20 +70,6 @@ const TILES: Tile[] = [
     color: "#06B6D4",
     pathname: "/content",
   },
-  {
-    label: "Alerty",
-    desc: "Oceny, frekwencja, zadania i lekcje",
-    icon: "notifications",
-    color: "#EF4444",
-    pathname: "/notifications",
-  },
-  {
-    label: "Profil",
-    desc: "Dane konta i prywatność",
-    icon: "person",
-    color: "#64748B",
-    pathname: "/parent/profile",
-  },
 ];
 
 export default function ParentDashboard() {
@@ -124,11 +108,7 @@ export default function ParentDashboard() {
   const { refreshing, onRefresh } = useRefresh(fetchChildren);
 
   const openTile = (pathname: ParentTilePath) => {
-    if (
-      pathname === "/content" ||
-      pathname === "/notifications" ||
-      pathname === "/parent/profile"
-    ) {
+    if (pathname === "/content") {
       router.push(pathname as Href);
       return;
     }

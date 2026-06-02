@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { StyleSheet, ScrollView, View, Text } from "react-native";
+import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   FadeInDown,
@@ -10,6 +11,7 @@ import Animated, {
   withDelay,
 } from "react-native-reanimated";
 import SafeAreaContainer from "@/src/components/SafeAreaContainer";
+import Button from "@/src/components/ui/Button";
 import { useTheme } from "@/src/theme/useTheme";
 import { floatingTabBar } from "@/src/theme/layout";
 
@@ -109,6 +111,12 @@ export default function GuestPage() {
               delay={1000}
             />
           </View>
+
+          <Button
+            title="Zaloguj"
+            onPress={() => router.push("/auth")}
+            style={styles.loginButton}
+          />
         </View>
       </ScrollView>
     </SafeAreaContainer>
@@ -136,6 +144,7 @@ const styles = StyleSheet.create({
   },
   subtitle: { fontSize: 17, textAlign: "center", marginBottom: 20 },
   featuresContainer: { marginVertical: 20, gap: 12 },
+  loginButton: { marginTop: 8 },
   featureItem: {
     flexDirection: "row",
     alignItems: "center",

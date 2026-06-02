@@ -116,6 +116,20 @@ export async function getLessonsByTeacher(
   }
 }
 
+export async function getAllLessons(): Promise<Lesson[]> {
+  try {
+    const snapshot = await getDocs(collection(db, COLLECTION_NAME));
+    return sortByDateAsc(
+      snapshot.docs.map((d) =>
+        lessonConverter(d as QueryDocumentSnapshot<DocumentData>)
+      )
+    );
+  } catch (error) {
+    console.error("Błąd podczas pobierania wszystkich lekcji:", error);
+    throw new Error("Nie udało się pobrać lekcji.");
+  }
+}
+
 export async function getLessonById(lessonId: string): Promise<Lesson | null> {
   try {
     const ref = doc(db, COLLECTION_NAME, lessonId);

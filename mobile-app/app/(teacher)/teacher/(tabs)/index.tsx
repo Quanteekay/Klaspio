@@ -49,18 +49,4 @@ const navigationItems: NavigationItemType[] = [
     iconBackgroundColor: "#06B6D4",
     route: "/content" as unknown as NavigationItemType["route"],
   },
-  {
-    label: "Alerty",
-    desc: "Powiadomienia o lekcjach i sprawach uczniów",
-    iconName: "notifications",
-    iconBackgroundColor: "#EF4444",
-    route: "/notifications" as unknown as NavigationItemType["route"],
-  },
-  {
-    label: "Profil",
-    desc: "Dane konta, prywatność i wylogowanie",
-    iconName: "person",
-    iconBackgroundColor: "#64748B",
-    route: "/teacher/profile",
-  },
 ];

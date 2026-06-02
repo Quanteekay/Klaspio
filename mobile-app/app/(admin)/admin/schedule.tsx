@@ -165,8 +165,8 @@ export default function AdminSchedule() {
       <ViewTitle back>Nowa lekcja</ViewTitle>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={{ gap: 14 }}>
-          <TextField label="Temat" value={topic} onChangeText={setTopic} placeholder="np. Konwersacje" />
           <PickerButton label="Przedmiot" value={subjectName} onPress={() => setPicker("subject")} t={t} />
+          <TextField label="Temat" value={topic} onChangeText={setTopic} placeholder="np. Konwersacje" />
           <PickerButton label="Nauczyciel" value={teacherName} onPress={() => setPicker("teacher")} t={t} />
           <View style={styles.inline}>
             <View style={styles.inlineItem}>

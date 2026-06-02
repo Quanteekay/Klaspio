@@ -33,7 +33,7 @@ export default function Index() {
   }
 
   if (!userData) {
-    return <Redirect href="/auth" />;
+    return <Redirect href="/(guest)/guest" />;
   }
 
   const roleRoutes: Record<string, any> = {

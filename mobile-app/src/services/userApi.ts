@@ -12,6 +12,7 @@ import {
   getAuth,
   signOut,
   sendPasswordResetEmail,
+  updateEmail,
 } from "firebase/auth";
 import { initializeApp, getApp, deleteApp, FirebaseApp } from "firebase/app";
 import { auth, db } from "@/FirebaseConfig";
@@ -80,6 +81,36 @@ export const updateCurrentUserData = async (
     console.error("Error updating user data:", error);
     throw error;
   }
+};
+
+export const updateCurrentUserEmail = async (email: string): Promise<void> => {
+  const currentUser = auth.currentUser;
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (!currentUser) {
+    throw new Error("No user is currently logged in");
+  }
+
+  const allUsers = await getAllUsers();
+  const emailTaken = allUsers.some(
+    (user) =>
+      user.uid !== currentUser.uid &&
+      user.email.trim().toLowerCase() === normalizedEmail
+  );
+
+  if (emailTaken) {
+    const error = new Error("Ten adres e-mail jest już używany.");
+    (error as Error & { code?: string }).code = "auth/email-already-in-use";
+    throw error;
+  }
+
+  if (currentUser.email?.trim().toLowerCase() !== normalizedEmail) {
+    await updateEmail(currentUser, normalizedEmail);
+  }
+
+  await updateDoc(doc(db, "users", currentUser.uid), {
+    email: normalizedEmail,
+  });
 };
 
 // Pobieranie wszystkich

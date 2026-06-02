@@ -3,7 +3,8 @@ export type NotificationType =
   | "grade_added"
   | "attendance_updated"
   | "lesson_created"
-  | "lesson_updated";
+  | "lesson_updated"
+  | "admin_message";
 
 export default interface AppNotification {
   id: string;

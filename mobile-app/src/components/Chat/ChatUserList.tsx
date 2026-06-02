@@ -150,6 +150,11 @@ export default function ChatUserList() {
       );
   }, [currentUser, searchText, users]);
 
+  const unreadTotal = useMemo(
+    () => Object.values(unreadCounts).reduce((sum, count) => sum + count, 0),
+    [unreadCounts]
+  );
+
   const openChat = (user: UserData) => {
     router.push({
       pathname: "/chat",
@@ -242,7 +247,9 @@ export default function ChatUserList() {
 
   return (
     <SafeAreaContainer>
-      <ViewTitle back>Wiadomości</ViewTitle>
+      <ViewTitle back>
+        {`Wiadomości (${unreadTotal})`}
+      </ViewTitle>
       <View style={styles.content}>
         <View style={styles.headerActions}>
           <Button

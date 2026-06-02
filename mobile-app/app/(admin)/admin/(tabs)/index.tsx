@@ -191,11 +191,11 @@ const navigationItems: NavigationItemType[] = [
     route: "/admin/subjects",
   },
   {
-    label: "Grafik lekcji",
-    desc: "Twórz lekcje i przypisuj grupy",
+    label: "Kalendarz",
+    desc: "Zajęcia oraz dodawanie nowych lekcji",
     iconName: "calendar-month",
     iconBackgroundColor: "#8B5CF6",
-    route: "/admin/schedule" as unknown as NavigationItemType["route"],
+    route: "/admin/lessons" as unknown as NavigationItemType["route"],
   },
   {
     label: "Materiały i galeria",
@@ -203,20 +203,6 @@ const navigationItems: NavigationItemType[] = [
     iconName: "perm-media",
     iconBackgroundColor: "#06B6D4",
     route: "/admin/content" as unknown as NavigationItemType["route"],
-  },
-  {
-    label: "Alerty",
-    desc: "Powiadomienia systemowe i szkolne",
-    iconName: "notifications",
-    iconBackgroundColor: "#EF4444",
-    route: "/notifications" as unknown as NavigationItemType["route"],
-  },
-  {
-    label: "Profil",
-    desc: "Dane konta, prywatność i wylogowanie",
-    iconName: "person",
-    iconBackgroundColor: "#64748B",
-    route: "/admin/profile" as unknown as NavigationItemType["route"],
   },
 ];
 
