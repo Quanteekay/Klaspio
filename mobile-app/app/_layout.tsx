@@ -11,6 +11,7 @@ import {
 } from "@react-navigation/native";
 import { useTheme } from "@/src/theme/useTheme";
 import { setupForegroundNotifications } from "@/src/services/notificationsApi";
+import BottomAppMenu from "@/src/components/Navigation/BottomAppMenu";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -69,20 +70,24 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={navTheme}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: t.colors.bg },
-          animation: "slide_from_right",
-        }}
-      >
-        <Stack.Screen name="index" />
-        <Stack.Screen name="auth" />
-        <Stack.Screen name="(student)" />
-        <Stack.Screen name="(teacher)" />
-        <Stack.Screen name="(admin)" />
-        <Stack.Screen name="(parent)" />
-      </Stack>
+      <>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: t.colors.bg },
+            animation: "slide_from_right",
+          }}
+        >
+          <Stack.Screen name="index" />
+          <Stack.Screen name="auth" />
+          <Stack.Screen name="(student)" />
+          <Stack.Screen name="(teacher)" />
+          <Stack.Screen name="(admin)" />
+          <Stack.Screen name="(parent)" />
+          <Stack.Screen name="(shared)" />
+        </Stack>
+        <BottomAppMenu />
+      </>
     </ThemeProvider>
   );
 }

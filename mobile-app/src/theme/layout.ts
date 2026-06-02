@@ -1,5 +1,5 @@
 export const floatingTabBar = {
-  margin: 18,
-  height: 70,
-  contentBottomPadding: 20,
+  margin: 16,
+  height: 76,
+  contentBottomPadding: 118,
 } as const;

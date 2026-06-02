@@ -6,4 +6,5 @@ export default interface ChatMessage {
   receiverId: string;
   body: string;
   createdAt: string;
+  readBy: string[];
 }

@@ -1,68 +1,154 @@
-import UserData from "@/src/models/UserData";
-import { UserRole } from "@/src/models/UserRole";
-import { getAllUsers } from "@/src/services/userApi";
-import { MaterialIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import SafeAreaContainer from "@/src/components/SafeAreaContainer";
+import ViewTitle from "@/src/components/ViewTitle";
+import Badge from "@/src/components/ui/Badge";
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
+import EmptyState from "@/src/components/ui/EmptyState";
+import UserData from "@/src/models/UserData";
+import { UserRole } from "@/src/models/UserRole";
+import type ChatMessage from "@/src/models/ChatMessage";
+import { getAllUsers, getCurrentUserData } from "@/src/services/userApi";
+import {
+  subscribeToUnreadMessageCountsByUser,
+  subscribeToUserMessages,
+} from "@/src/services/chatApi";
 import { floatingTabBar } from "@/src/theme/layout";
+import { useTheme } from "@/src/theme/useTheme";
 
-const ChatUserList = () => {
+type Mode = "inbox" | "compose";
+
+interface ConversationItem {
+  user: UserData;
+  lastMessage: ChatMessage;
+}
+
+const ROLE_LABELS: Record<Exclude<UserRole, null>, string> = {
+  admin: "Administrator",
+  teacher: "Nauczyciel",
+  student: "Uczeń",
+  parent: "Rodzic",
+  guest: "Gość",
+};
+
+export default function ChatUserList() {
+  const t = useTheme();
+  const [mode, setMode] = useState<Mode>("inbox");
   const [users, setUsers] = useState<UserData[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
+  const [currentUser, setCurrentUser] = useState<UserData | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
-
-  // Filters
+  const [error, setError] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
-  const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
 
   useEffect(() => {
-    fetchUsers();
+    fetchInitialData();
   }, []);
 
   useEffect(() => {
-    filterUsers();
-  }, [users, searchText, roleFilter]);
+    if (!currentUser?.uid) return;
+    const unsubscribeMessages = subscribeToUserMessages(
+      currentUser.uid,
+      setMessages,
+      setError
+    );
+    const unsubscribeCounts = subscribeToUnreadMessageCountsByUser(
+      currentUser.uid,
+      setUnreadCounts
+    );
+    return () => {
+      unsubscribeMessages();
+      unsubscribeCounts();
+    };
+  }, [currentUser?.uid]);
 
-  const fetchUsers = async () => {
+  const fetchInitialData = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const data = await getAllUsers();
-      // In a chat list, we usually only want to see Active users
-      const activeUsers = data.filter((u: UserData) => u.active);
-      setUsers(activeUsers);
-      setFilteredUsers(activeUsers);
-    } catch (error: any) {
-      alert("Błąd pobierania kontaktów: " + error.message);
+      const me = await getCurrentUserData();
+      const allUsers = await getAllUsers();
+      setCurrentUser(me);
+      setUsers(allUsers);
+    } catch {
+      setError("Nie udało się pobrać wiadomości.");
     } finally {
       setLoading(false);
     }
   };
 
-  const filterUsers = () => {
-    let result = users;
-    if (searchText) {
-      result = result.filter(
-        (u) =>
-          u.surname.toLowerCase().includes(searchText.toLowerCase()) ||
-          u.firstName.toLowerCase().includes(searchText.toLowerCase()) ||
-          u.email.toLowerCase().includes(searchText.toLowerCase())
+  const usersById = useMemo(() => {
+    const map: Record<string, UserData> = {};
+    users.forEach((user) => {
+      map[user.uid] = user;
+    });
+    return map;
+  }, [users]);
+
+  const conversations = useMemo<ConversationItem[]>(() => {
+    if (!currentUser) return [];
+
+    const latestByUser: Record<string, ChatMessage> = {};
+    messages.forEach((message) => {
+      const otherId =
+        message.senderId === currentUser.uid ? message.receiverId : message.senderId;
+      if (!otherId) return;
+
+      const current = latestByUser[otherId];
+      if (
+        !current ||
+        new Date(message.createdAt).getTime() > new Date(current.createdAt).getTime()
+      ) {
+        latestByUser[otherId] = message;
+      }
+    });
+
+    return Object.entries(latestByUser)
+      .map(([userId, lastMessage]) => {
+        const user = usersById[userId];
+        if (!user) return null;
+        return { user, lastMessage };
+      })
+      .filter((item): item is ConversationItem => item !== null)
+      .sort(
+        (a, b) =>
+          new Date(b.lastMessage.createdAt).getTime() -
+          new Date(a.lastMessage.createdAt).getTime()
       );
-    }
-    if (roleFilter !== "all") {
-      result = result.filter((u) => u.role === roleFilter);
-    }
-    setFilteredUsers(result);
-  };
+  }, [currentUser, messages, usersById]);
+
+  const allowedContacts = useMemo(() => {
+    if (!currentUser) return [];
+    const term = searchText.trim().toLowerCase();
+    return users
+      .filter(
+        (user) =>
+          user.active &&
+          user.uid !== currentUser.uid &&
+          canContactRoleFor(currentUser.role, user.role)
+      )
+      .filter((user) => {
+        if (!term) return true;
+        return `${user.firstName} ${user.surname} ${user.email}`
+          .toLowerCase()
+          .includes(term);
+      })
+      .sort((a, b) =>
+        `${a.firstName} ${a.surname}`.localeCompare(`${b.firstName} ${b.surname}`)
+      );
+  }, [currentUser, searchText, users]);
 
   const openChat = (user: UserData) => {
     router.push({
@@ -74,211 +160,242 @@ const ChatUserList = () => {
     });
   };
 
-  const renderUserItem = ({ item }: { item: UserData }) => (
-    <TouchableOpacity style={styles.userCard} onPress={() => openChat(item)}>
-      <View style={styles.avatarContainer}>
-        <View style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarText}>
-            {item.firstName.charAt(0)}
-            {item.surname.charAt(0)}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.cardInfo}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.userName}>
-            {item.firstName} {item.surname}
-          </Text>
-        </View>
-        <Text style={styles.userEmail}>{item.email}</Text>
-        <View style={styles.roleContainer}>
-          <View
-            style={[
-              styles.roleBadge,
-              {
-                backgroundColor:
-                  item.role === "admin"
-                    ? "#E91E63"
-                    : item.role === "teacher"
-                    ? "#FF9800"
-                    : "#4CAF50",
-              },
-            ]}
-          >
-            <Text style={styles.roleText}>{item.role}</Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.actionIcon}>
-        <MaterialIcons name="chat-bubble-outline" size={24} color="#5C6BC0" />
-      </View>
-    </TouchableOpacity>
+  const renderAvatar = (user: UserData) => (
+    <View style={[styles.avatar, { backgroundColor: t.colors.primarySoft }]}>
+      <Text style={[styles.avatarText, { color: t.colors.primary }]}>
+        {user.firstName.charAt(0)}
+        {user.surname.charAt(0)}
+      </Text>
+    </View>
   );
+
+  const renderConversation = ({ item }: { item: ConversationItem }) => {
+    const unread = unreadCounts[item.user.uid] ?? 0;
+    const mine = item.lastMessage.senderId === currentUser?.uid;
+    return (
+      <Pressable onPress={() => openChat(item.user)}>
+        <Card compact style={styles.rowCard}>
+          {renderAvatar(item.user)}
+          <View style={styles.rowBody}>
+            <View style={styles.rowTop}>
+              <Text style={[styles.name, { color: t.colors.textPrimary }]}>
+                {item.user.firstName} {item.user.surname}
+              </Text>
+              <Text style={[styles.time, { color: t.colors.textMuted }]}>
+                {formatDate(item.lastMessage.createdAt)}
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.preview,
+                { color: unread ? t.colors.textPrimary : t.colors.textSecondary },
+                unread > 0 && { fontWeight: "800" },
+              ]}
+              numberOfLines={1}
+            >
+              {mine ? "Ty: " : ""}
+              {item.lastMessage.body}
+            </Text>
+            <Badge
+              label={roleLabel(item.user.role)}
+              tone={item.user.role === "admin" ? "danger" : "neutral"}
+              style={{ marginTop: 8 }}
+            />
+          </View>
+          {unread ? (
+            <View style={[styles.unreadBadge, { backgroundColor: t.colors.danger }]}>
+              <Text style={styles.unreadText}>{unread > 99 ? "99+" : unread}</Text>
+            </View>
+          ) : (
+            <MaterialIcons name="chevron-right" size={24} color={t.colors.textMuted} />
+          )}
+        </Card>
+      </Pressable>
+    );
+  };
+
+  const renderContact = ({ item }: { item: UserData }) => {
+    const hasConversation = conversations.some(
+      (conversation) => conversation.user.uid === item.uid
+    );
+    return (
+      <Pressable onPress={() => openChat(item)}>
+        <Card compact style={styles.rowCard}>
+          {renderAvatar(item)}
+          <View style={styles.rowBody}>
+            <Text style={[styles.name, { color: t.colors.textPrimary }]}>
+              {item.firstName} {item.surname}
+            </Text>
+            <Text style={[styles.preview, { color: t.colors.textSecondary }]}>
+              {item.email}
+            </Text>
+            <View style={styles.badges}>
+              <Badge label={roleLabel(item.role)} />
+              {hasConversation ? <Badge label="Istniejący czat" tone="info" /> : null}
+            </View>
+          </View>
+          <MaterialIcons name="chat-bubble-outline" size={24} color={t.colors.primary} />
+        </Card>
+      </Pressable>
+    );
+  };
 
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.headerRow}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <MaterialIcons name="arrow-back" size={28} color="#1A237E" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Nowa Wiadomość</Text>
-        {/* Placeholder View to balance the header since we removed the Add button */}
-        <View style={{ width: 38 }} />
-      </View>
-
-      {/* FILTERS */}
-      <View style={styles.filtersContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Szukaj osoby..."
-          value={searchText}
-          onChangeText={setSearchText}
-        />
-        <View style={styles.chipsRow}>
-          {(["all", "student", "teacher", "admin"] as const).map((role) => (
-            <TouchableOpacity
-              key={role}
-              style={[styles.chip, roleFilter === role && styles.chipActive]}
-              onPress={() => setRoleFilter(role)}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  roleFilter === role && styles.chipTextActive,
-                ]}
-              >
-                {role === "all" ? "Wszyscy" : role}
-              </Text>
-            </TouchableOpacity>
-          ))}
+    <SafeAreaContainer>
+      <ViewTitle back>Wiadomości</ViewTitle>
+      <View style={styles.content}>
+        <View style={styles.headerActions}>
+          <Button
+            title={mode === "inbox" ? "Nowa wiadomość" : "Istniejące czaty"}
+            icon={mode === "inbox" ? "create-outline" : "chatbubbles-outline"}
+            onPress={() => {
+              setMode((prev) => (prev === "inbox" ? "compose" : "inbox"));
+              setSearchText("");
+            }}
+          />
         </View>
+
+        {mode === "compose" ? (
+          <TextInput
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder="Szukaj osoby..."
+            placeholderTextColor={t.colors.textMuted}
+            style={[
+              styles.searchInput,
+              {
+                backgroundColor: t.colors.surface,
+                borderColor: t.colors.border,
+                color: t.colors.textPrimary,
+              },
+            ]}
+          />
+        ) : null}
+
+        {error ? (
+          <Text style={[styles.errorText, { color: t.colors.danger }]}>
+            {error}
+          </Text>
+        ) : null}
+
+        {loading ? (
+          <ActivityIndicator color={t.colors.primary} style={{ marginTop: 20 }} />
+        ) : mode === "inbox" ? (
+          <FlatList
+            data={conversations}
+            renderItem={renderConversation}
+            keyExtractor={(item) => item.user.uid}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <EmptyState message="Brak rozmów. Użyj przycisku Nowa wiadomość, aby rozpocząć czat." />
+            }
+          />
+        ) : (
+          <FlatList
+            data={allowedContacts}
+            renderItem={renderContact}
+            keyExtractor={(item) => item.uid}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={<EmptyState message="Nie znaleziono kontaktów." />}
+          />
+        )}
       </View>
-
-      {/* LIST */}
-      {loading ? (
-        <ActivityIndicator
-          size="large"
-          color="#5C6BC0"
-          style={{ marginTop: 20 }}
-        />
-      ) : (
-        <FlatList
-          data={filteredUsers}
-          renderItem={renderUserItem}
-          keyExtractor={(item) => item.uid}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>Nie znaleziono użytkowników.</Text>
-          }
-        />
-      )}
-    </SafeAreaView>
+    </SafeAreaContainer>
   );
-};
+}
 
-export default ChatUserList;
+function canContactRoleFor(currentRole: UserRole, otherRole: UserRole): boolean {
+  if (!currentRole || !otherRole || currentRole === "guest" || otherRole === "guest") {
+    return false;
+  }
+  if (currentRole === "admin") {
+    return otherRole === "teacher" || otherRole === "student" || otherRole === "parent";
+  }
+  if (currentRole === "teacher") {
+    return otherRole === "admin" || otherRole === "student" || otherRole === "parent";
+  }
+  if (currentRole === "student" || currentRole === "parent") {
+    return otherRole === "admin" || otherRole === "teacher";
+  }
+  return false;
+}
+
+function roleLabel(role: UserRole): string {
+  if (!role) return "Użytkownik";
+  return ROLE_LABELS[role] ?? "Użytkownik";
+}
+
+function formatDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("pl-PL", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F5F5", width: "100%" },
-
-  // Header
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: "#fff",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderColor: "#E0E0E0",
-  },
-  backButton: { padding: 5 },
-  title: { fontSize: 22, fontWeight: "800", color: "#1A237E" },
-
-  // Filters
-  filtersContainer: {
-    padding: 15,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderColor: "#E0E0E0",
-  },
+  content: { flex: 1, paddingHorizontal: 16 },
+  headerActions: { marginBottom: 12 },
   searchInput: {
-    backgroundColor: "#F0F0F0",
+    borderWidth: 1.5,
     borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 16,
     marginBottom: 12,
   },
-  chipsRow: { flexDirection: "row", justifyContent: "space-between" },
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 25,
-    backgroundColor: "#EEEEEE",
+  listContent: {
+    paddingBottom: floatingTabBar.contentBottomPadding,
+    gap: 10,
   },
-  chipActive: { backgroundColor: "#5C6BC0" },
-  chipText: { color: "#616161", fontSize: 13, fontWeight: "600" },
-  chipTextActive: { color: "#FFF" },
-
-  // List
-  listContent: { padding: 15, paddingBottom: floatingTabBar.contentBottomPadding },
-  emptyText: {
-    textAlign: "center",
-    marginTop: 40,
-    color: "#757575",
-    fontSize: 16,
-  },
-
-  // User Cards (Redesigned for Chat Context)
-  userCard: {
-    backgroundColor: "#FFF",
-    borderRadius: 16,
-    padding: 15,
-    marginBottom: 12,
+  rowCard: {
     flexDirection: "row",
     alignItems: "center",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    gap: 12,
   },
-  avatarContainer: { marginRight: 15 },
-  avatarPlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#E8EAF6",
-    justifyContent: "center",
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
+    justifyContent: "center",
   },
   avatarText: {
-    color: "#3949AB",
-    fontWeight: "bold",
-    fontSize: 18,
-  },
-  cardInfo: { flex: 1 },
-  cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 2 },
-  userName: { fontSize: 16, fontWeight: "bold", color: "#333" },
-  userEmail: { fontSize: 13, color: "#757575", marginBottom: 4 },
-
-  roleContainer: { flexDirection: "row" },
-  roleBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
-  roleText: {
-    color: "#FFF",
-    fontSize: 10,
-    fontWeight: "bold",
+    fontSize: 17,
+    fontWeight: "800",
     textTransform: "uppercase",
   },
-
-  actionIcon: {
-    paddingLeft: 10,
+  rowBody: { flex: 1, minWidth: 0 },
+  rowTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  name: { fontSize: 16, fontWeight: "800", flex: 1 },
+  time: { fontSize: 12, fontWeight: "600" },
+  preview: { fontSize: 14, marginTop: 4 },
+  badges: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+    marginTop: 8,
+  },
+  unreadBadge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 7,
+  },
+  unreadText: { color: "#FFFFFF", fontSize: 11, fontWeight: "800" },
+  errorText: {
+    textAlign: "center",
+    fontWeight: "700",
+    paddingVertical: 10,
   },
 });

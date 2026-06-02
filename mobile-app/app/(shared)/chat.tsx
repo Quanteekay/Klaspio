@@ -16,6 +16,7 @@ import ViewTitle from "@/src/components/ViewTitle";
 import Button from "@/src/components/ui/Button";
 import { auth } from "@/FirebaseConfig";
 import {
+  markConversationRead,
   sendMessage,
   subscribeToConversation,
 } from "@/src/services/chatApi";
@@ -40,6 +41,13 @@ export default function TabChatScreen() {
       setError
     );
   }, [currentUserId, id]);
+
+  useEffect(() => {
+    if (!id || !currentUserId || messages.length === 0) return;
+    markConversationRead(currentUserId, id, messages).catch(() => {
+      setError("Nie udało się oznaczyć wiadomości jako przeczytane.");
+    });
+  }, [currentUserId, id, messages]);
 
   const canSend = useMemo(() => body.trim().length > 0 && !!id, [body, id]);
 
@@ -139,6 +147,7 @@ const styles = StyleSheet.create({
   composer: {
     borderTopWidth: 1,
     padding: 10,
+    marginBottom: floatingTabBar.contentBottomPadding - floatingTabBar.margin,
     flexDirection: "row",
     alignItems: "flex-end",
     gap: 10,

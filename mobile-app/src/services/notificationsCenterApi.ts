@@ -6,6 +6,7 @@ import {
   doc,
   DocumentData,
   getDocs,
+  onSnapshot,
   query,
   QueryDocumentSnapshot,
   serverTimestamp,
@@ -100,6 +101,30 @@ export async function getNotificationsForUser(
     console.error("Błąd podczas pobierania alertów:", error);
     return [];
   }
+}
+
+export function subscribeToUnreadNotificationCount(
+  userId: string,
+  onCount: (count: number) => void
+) {
+  const q = query(
+    collection(db, COLLECTION_NAME),
+    where("targetUserIds", "array-contains", userId)
+  );
+
+  return onSnapshot(
+    q,
+    (snap) => {
+      const count = snap.docs
+        .map((d) => notificationConverter(d as QueryDocumentSnapshot<DocumentData>))
+        .filter((item) => !item.readBy.includes(userId)).length;
+      onCount(count);
+    },
+    (error) => {
+      console.error("Błąd licznika alertów:", error);
+      onCount(0);
+    }
+  );
 }
 
 export async function markNotificationRead(

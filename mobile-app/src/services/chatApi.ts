@@ -1,14 +1,16 @@
 import { db } from "@/FirebaseConfig";
 import {
   addDoc,
+  arrayUnion,
   collection,
   DocumentData,
+  doc,
   onSnapshot,
-  orderBy,
   query,
   QueryDocumentSnapshot,
   serverTimestamp,
   Timestamp,
+  updateDoc,
   where,
 } from "firebase/firestore";
 import type ChatMessage from "@/src/models/ChatMessage";
@@ -38,6 +40,7 @@ function messageConverter(d: QueryDocumentSnapshot<DocumentData>): ChatMessage {
     receiverId: data.receiverId ?? "",
     body: data.body ?? "",
     createdAt: parseDate(data.createdAt),
+    readBy: Array.isArray(data.readBy) ? data.readBy : [],
   };
 }
 
@@ -50,19 +53,18 @@ export function subscribeToConversation(
   const conversationId = conversationIdFor(currentUserId, otherUserId);
   const q = query(
     collection(db, COLLECTION_NAME),
-    where("conversationId", "==", conversationId),
-    orderBy("createdAt", "asc")
+    where("conversationId", "==", conversationId)
   );
   return onSnapshot(
     q,
     (snap) =>
       onMessages(
-        snap.docs.map((d) =>
-          messageConverter(d as QueryDocumentSnapshot<DocumentData>)
-        )
+        snap.docs
+          .map((d) => messageConverter(d as QueryDocumentSnapshot<DocumentData>))
+          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
       ),
     (error) => {
-      console.error("Błąd realtime czatu:", error);
+      console.warn("Błąd realtime czatu:", error);
       onError?.("Nie udało się pobrać wiadomości.");
     }
   );
@@ -81,6 +83,117 @@ export async function sendMessage(
     senderId: currentUserId,
     receiverId: otherUserId,
     body: trimmed,
+    readBy: [currentUserId],
     createdAt: serverTimestamp(),
   });
+}
+
+export function subscribeToUnreadMessageCount(
+  currentUserId: string,
+  onCount: (count: number) => void
+) {
+  const q = query(
+    collection(db, COLLECTION_NAME),
+    where("participantIds", "array-contains", currentUserId)
+  );
+
+  return onSnapshot(
+    q,
+    (snap) => {
+      const count = snap.docs
+        .map((d) => messageConverter(d as QueryDocumentSnapshot<DocumentData>))
+        .filter(
+          (message) =>
+            message.senderId !== currentUserId &&
+            !message.readBy.includes(currentUserId)
+        ).length;
+      onCount(count);
+    },
+    (error) => {
+      console.warn("Błąd licznika wiadomości:", error);
+      onCount(0);
+    }
+  );
+}
+
+export function subscribeToUserMessages(
+  currentUserId: string,
+  onMessages: (messages: ChatMessage[]) => void,
+  onError?: (message: string) => void
+) {
+  const q = query(
+    collection(db, COLLECTION_NAME),
+    where("participantIds", "array-contains", currentUserId)
+  );
+
+  return onSnapshot(
+    q,
+    (snap) =>
+      onMessages(
+        snap.docs
+          .map((d) => messageConverter(d as QueryDocumentSnapshot<DocumentData>))
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )
+      ),
+    (error) => {
+      console.warn("Błąd pobierania rozmów:", error);
+      onError?.("Nie udało się pobrać rozmów.");
+    }
+  );
+}
+
+export function subscribeToUnreadMessageCountsByUser(
+  currentUserId: string,
+  onCounts: (counts: Record<string, number>) => void
+) {
+  const q = query(
+    collection(db, COLLECTION_NAME),
+    where("participantIds", "array-contains", currentUserId)
+  );
+
+  return onSnapshot(
+    q,
+    (snap) => {
+      const counts: Record<string, number> = {};
+      snap.docs
+        .map((d) => messageConverter(d as QueryDocumentSnapshot<DocumentData>))
+        .filter(
+          (message) =>
+            message.senderId !== currentUserId &&
+            !message.readBy.includes(currentUserId)
+        )
+        .forEach((message) => {
+          counts[message.senderId] = (counts[message.senderId] ?? 0) + 1;
+        });
+      onCounts(counts);
+    },
+    (error) => {
+      console.warn("Błąd liczników rozmów:", error);
+      onCounts({});
+    }
+  );
+}
+
+export async function markConversationRead(
+  currentUserId: string,
+  otherUserId: string,
+  messages: ChatMessage[]
+): Promise<void> {
+  const conversationId = conversationIdFor(currentUserId, otherUserId);
+  await Promise.all(
+    messages
+      .filter(
+        (message) =>
+          message.conversationId === conversationId &&
+          message.senderId !== currentUserId &&
+          !message.readBy.includes(currentUserId)
+      )
+      .map((message) =>
+        updateDoc(doc(db, COLLECTION_NAME, message.id), {
+          readBy: arrayUnion(currentUserId),
+        })
+      )
+  );
 }
