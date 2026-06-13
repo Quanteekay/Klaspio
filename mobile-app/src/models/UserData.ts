@@ -9,5 +9,4 @@ export default interface UserData {
   active: boolean;
   avatar?: string;
   children?: string[];
-  pushTokens?: string[];
 }

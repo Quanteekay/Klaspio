@@ -1,223 +1,298 @@
 # Klaspio
 
-Aplikacja mobilna dla szkoły językowej (React Native + Expo Router + Firebase).
+Klaspio to wielorolowy dziennik elektroniczny dla szkoły językowej. Aplikacja działa na iOS, Androidzie i w przeglądarce, a jej klient został zbudowany w React Native, Expo Router i Firebase.
+
+Obsługiwane role:
+
+- administrator;
+- nauczyciel;
+- uczeń;
+- rodzic;
+- gość.
+
+## Aktualny zakres
+
+### Administrator
+
+- zarządzanie kontami, rolami i aktywnością użytkowników;
+- przypisywanie dzieci do kont rodziców;
+- tworzenie i edycja przedmiotów;
+- tworzenie i edycja grup uczniów;
+- planowanie i edycja lekcji;
+- wybór nauczyciela, przedmiotu, grupy lub pojedynczych uczniów;
+- zarządzanie materiałami i galerią opartą na adresach URL;
+- wysyłanie alertów do wszystkich lub wybranych użytkowników;
+- statystyki liczby kont według ról.
+
+### Nauczyciel
+
+- tworzenie zadań dla ucznia lub grupy;
+- przeglądanie odpowiedzi;
+- zapisywanie oceny roboczej i komentarza;
+- zatwierdzanie ocen;
+- kalendarz własnych lekcji;
+- uzupełnianie realizacji rozpoczętej lekcji;
+- zapisywanie frekwencji uczniów.
+
+### Uczeń
+
+- dashboard postępów;
+- oceny i średnie według przedmiotów;
+- lista zadań z filtrowaniem i wyszukiwaniem;
+- wysyłanie i edycja odpowiedzi przed zatwierdzeniem zadania;
+- statystyki i historia frekwencji;
+- kalendarz oraz szczegóły lekcji;
+- dostęp do materiałów szkolnych.
+
+### Rodzic
+
+- wybór przypisanego dziecka;
+- podgląd ocen i średnich;
+- podgląd zadań, odpowiedzi i komentarzy;
+- podgląd frekwencji;
+- podgląd kalendarza i szczegółów lekcji.
+
+### Funkcje wspólne
+
+- logowanie przez Firebase Authentication;
+- reset i zmiana hasła;
+- edycja adresu e-mail;
+- awatar przechowywany w Firebase Storage;
+- czat jeden-do-jednego z licznikami nieprzeczytanych wiadomości;
+- alerty wewnątrz aplikacji z licznikami i statusem odczytu;
+- profil użytkownika;
+- automatyczny jasny lub ciemny motyw;
+- pull-to-refresh na ekranach danych;
+- globalne dolne menu.
+
+Alerty są przechowywane w Firestore i wyświetlane wewnątrz aplikacji. Projekt nie zawiera obecnie powiadomień push ani Cloud Functions.
+
+## Stack technologiczny
+
+| Obszar | Technologia |
+|---|---|
+| UI | React Native 0.81, React 19 |
+| Runtime | Expo SDK 54 |
+| Routing | Expo Router 6, routing plikowy i typed routes |
+| Uwierzytelnianie | Firebase Authentication |
+| Baza danych | Cloud Firestore |
+| Pliki | Firebase Storage |
+| Sesja natywna | AsyncStorage |
+| Kalendarze | react-native-calendars |
+| Animacje | react-native-reanimated |
+| Testy | Jest, ts-jest |
+| Język | TypeScript 5.9 w trybie strict |
 
 ## Wymagania
 
-Node LTS (~24).
+- Node.js LTS, zalecana wersja 20 lub nowsza;
+- npm;
+- Git;
+- projekt Firebase z aplikacją Web;
+- Expo Go na telefonie lub środowisko natywne Xcode/Android Studio.
 
-DOCS: https://docs.expo.dev/get-started/create-a-project/
-
-Można użyć NVM: https://github.com/nvm-sh/nvm
-```bash
-nvm install --lts       # windows: nvm install lts
-nvm use --lts           # windows: nvm use lts
-node --version          # v24.*.*
-```
+Projekt był uruchamiany z Node.js 24.
 
 ## Instalacja
 
 ```bash
-cd klaspo/mobile-app
-cp .env.example .env       # uzupełnij kluczami swojego projektu Firebase
-npm install
+git clone <URL_REPOZYTORIUM>
+cd "klaspio v2"
+npm install --prefix mobile-app
 ```
 
-## Uruchomienie
+Utwórz lokalną konfigurację Firebase:
 
 ```bash
-# dev server
-npx expo start
-
-# natywnie (wymaga konfiguracji Xcode/Android Studio)
-npx expo run:ios
-npx expo run:android
+cp mobile-app/.env.example mobile-app/.env
 ```
 
-## Stack
-
-- UI: React Native (Expo SDK 54)
-- Routing: expo-router (typed routes)
-- Auth: Firebase Authentication (email/hasło)
-- Baza: Firestore Database
-- Motyw: własny adaptacyjny design system (jasny/ciemny), patrz `src/theme/`
-- Komponenty UI: `src/components/ui/`
-
-Pełna lista zmian per moduł: `klaspo/mobile-app/CHANGELOG.md`.
-
----
-
-# Klaspio
-
-Wielorolowy dziennik elektroniczny dla szkoły językowej — aplikacja mobilna (iOS / Android / Web) zbudowana w **React Native + Expo + Firebase**.
-
-Role w aplikacji: **uczeń · nauczyciel · administrator · rodzic · gość**.
-
----
-
-## 🚀 Szybki start — uruchomienie w Expo Go (od A do Z)
-
-> **Expo Go** to darmowa aplikacja na telefon, w której uruchamiasz projekt bez budowania natywnego.
-> Pobierz ją ze sklepu: **App Store** (iOS) lub **Google Play** (Android).
->
-> ⚠️ **Uwaga:** powiadomienia push (FCM) **nie działają** w Expo Go — to oczekiwane. Cała reszta aplikacji działa normalnie.
-
-### Wymagania wstępne (oba systemy)
-- **Node.js LTS** (zalecane v20+; projekt testowany na v24) — [nodejs.org](https://nodejs.org)
-- **Git**
-- Telefon z zainstalowaną aplikacją **Expo Go**
-- Telefon i komputer w **tej samej sieci Wi‑Fi**
-- Dane konfiguracyjne projektu **Firebase** (Web App) — patrz krok 3
-
----
-
-### 🪟 Windows — krok po kroku
+Na Windows:
 
 ```powershell
-# 1. Sklonuj repozytorium i wejdź do folderu aplikacji
-git clone <URL-REPOZYTORIUM>
-cd "klaspio v2\mobile-app"
-
-# 2. Zainstaluj zależności
-npm install
-
-# 3. Utwórz plik .env z konfiguracją Firebase
-copy .env.example .env
-notepad .env          # wklej swoje klucze Firebase i zapisz
-
-# 4. Uruchom serwer deweloperski
-npx expo start
+copy mobile-app\.env.example mobile-app\.env
 ```
 
-5. W terminalu pojawi się **kod QR**.
-6. Otwórz aplikację **Expo Go** na telefonie (Android: zeskanuj QR wbudowanym skanerem Expo Go; iOS: zeskanuj aparatem i otwórz w Expo Go).
-7. Aplikacja zbuduje bundle i uruchomi się na telefonie. 🎉
-
-> Jeśli telefon nie łączy się przez Wi‑Fi (np. sieć firmowa/uczelniana izoluje urządzenia), uruchom w trybie tunnel:
-> ```powershell
-> npx expo start --tunnel
-> ```
-
----
-
-### 🍎 macOS — krok po kroku
-
-```bash
-# 1. Sklonuj repozytorium i wejdź do folderu aplikacji
-git clone <URL-REPOZYTORIUM>
-cd "klaspio v2/mobile-app"
-
-# 2. Zainstaluj zależności
-npm install
-
-# 3. Utwórz plik .env z konfiguracją Firebase
-cp .env.example .env
-open -e .env          # wklej swoje klucze Firebase i zapisz
-
-# 4. Uruchom serwer deweloperski
-npx expo start
-```
-
-5. W terminalu pojawi się **kod QR**.
-6. **iOS:** zeskanuj QR **aparatem** → stuknij baner „Otwórz w Expo Go".
-   **Android:** zeskanuj QR **bezpośrednio w aplikacji Expo Go**.
-7. Aplikacja zbuduje bundle i uruchomi się na telefonie. 🎉
-
-> Tryb tunnel (gdy Wi‑Fi nie współpracuje):
-> ```bash
-> npx expo start --tunnel
-> ```
-
----
-
-### 🔑 Krok 3 szczegółowo — konfiguracja Firebase
-
-Plik `.env` (w folderze `mobile-app/`) musi zawierać klucze Twojego projektu Firebase.
-Znajdziesz je w **Firebase Console → Project Settings → General → Your apps → Web app**:
+Uzupełnij `mobile-app/.env` danymi aplikacji Web z Firebase Console:
 
 ```env
 EXPO_PUBLIC_FIREBASE_API_KEY=...
-EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=twoj-projekt.firebaseapp.com
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=twoj-projekt
-EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=twoj-projekt.firebasestorage.app
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=...
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=...
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
 EXPO_PUBLIC_FIREBASE_APP_ID=...
 ```
 
-W projekcie Firebase muszą być włączone: **Authentication (Email/Password)**, **Firestore Database** oraz **Storage**.
+Plik `.env` nie jest śledzony przez Git.
 
----
+## Konfiguracja Firebase
 
-### 💻 Uruchomienie w przeglądarce (opcjonalnie, bez telefonu)
+W projekcie Firebase należy włączyć:
+
+1. Authentication z metodą Email/Password.
+2. Cloud Firestore.
+3. Firebase Storage.
+4. Aplikację Web, której dane konfiguracyjne trafiają do `.env`.
+
+Lokalne pliki infrastruktury:
+
+- `mobile-app/firestore.rules`;
+- `mobile-app/firestore.indexes.json`;
+- `mobile-app/storage.rules`;
+- `mobile-app/firebase.json`;
+- `mobile-app/.firebaserc`.
+
+Wdrożenie reguł i indeksów:
 
 ```bash
-npx expo start --web
+cd mobile-app
+firebase deploy --only firestore:rules,firestore:indexes,storage
 ```
 
----
+Wartość projektu w `.firebaserc` musi odpowiadać faktycznemu Firebase Project ID.
 
-## 🛠️ Stack technologiczny
+## Uruchamianie
 
-| Obszar | Technologia |
+Polecenia można wykonywać z katalogu głównego:
+
+```bash
+npm start
+npm run android
+npm run ios
+npm run web
+```
+
+Odpowiadają one skryptom z `mobile-app/package.json`.
+
+Bezpośrednio z katalogu aplikacji:
+
+```bash
+cd mobile-app
+npm start
+```
+
+Po uruchomieniu Metro:
+
+- Android: zeskanuj kod QR w Expo Go;
+- iOS: zeskanuj kod QR aparatem i otwórz projekt w Expo Go;
+- Web: użyj `npm run web`.
+
+Jeżeli urządzenia nie widzą się w sieci lokalnej:
+
+```bash
+npx expo start --tunnel
+```
+
+## Dostępne skrypty
+
+| Polecenie | Działanie |
 |---|---|
-| UI | React Native (Expo SDK 54), React 19 |
-| Routing | expo-router (file-based, typed routes) |
-| Auth | Firebase Authentication (email/hasło) |
-| Baza danych | Cloud Firestore |
-| Pliki | Firebase Storage (awatary) |
-| Kalendarze | react-native-calendars |
-| Animacje | react-native-reanimated |
-| Motyw | Własny design system light/dark (`src/theme/`, `src/components/ui/`) |
-| Testy | Jest + ts-jest (logika domenowa) |
+| `npm start` | Uruchamia Expo Go |
+| `npm run android` | Uruchamia Expo Go na Androidzie |
+| `npm run ios` | Uruchamia Expo Go na iOS |
+| `npm run web` | Uruchamia aplikację Web |
+| `npm run build` | Generuje statyczny eksport Web w `mobile-app/dist` |
+| `npm run typecheck` | Uruchamia `tsc --noEmit` |
+| `npm test` | Uruchamia testy Jest |
 
-## 📁 Struktura projektu
+## Struktura projektu
 
+```text
+.
+|-- README.md
+|-- AUDYT_PROJEKTU.md
+|-- package.json
+`-- mobile-app/
+    |-- app/
+    |   |-- auth/
+    |   |-- (admin)/
+    |   |-- (teacher)/
+    |   |-- (student)/
+    |   |-- (parent)/
+    |   |-- (guest)/
+    |   |-- (shared)/
+    |   `-- lesson/
+    |-- src/
+    |   |-- components/
+    |   |-- domain/
+    |   |-- hooks/
+    |   |-- models/
+    |   |-- services/
+    |   |-- theme/
+    |   `-- utils/
+    |-- FirebaseConfig.ts
+    |-- firestore.rules
+    |-- firestore.indexes.json
+    |-- storage.rules
+    |-- firebase.json
+    |-- app.json
+    `-- package.json
 ```
-mobile-app/
-├── app/                # ekrany i routing (expo-router)
-│   ├── auth/           # logowanie, rejestracja, reset hasła
-│   ├── (student)/      # przestrzeń ucznia
-│   ├── (teacher)/      # przestrzeń nauczyciela
-│   ├── (admin)/        # panel administratora
-│   ├── (parent)/       # przestrzeń rodzica
-│   ├── (guest)/        # tryb gościa
-│   └── (shared)/       # profil, treści, powiadomienia, chat
-├── src/
-│   ├── services/       # warstwa API (Firestore/Auth/Storage)
-│   ├── domain/         # czysta logika biznesowa (testowana)
-│   ├── models/         # interfejsy TypeScript
-│   ├── components/     # komponenty (w tym ui/ = design system)
-│   ├── theme/          # motyw i hook useTheme
-│   └── hooks/          # hooki reużywalne
-├── firestore.rules     # reguły bezpieczeństwa Firestore
-├── storage.rules       # reguły Storage
-└── firestore.indexes.json
-```
 
-## 📜 Dostępne skrypty
+### Warstwy
 
-Uruchamiane z folderu `mobile-app/`:
+- `app/` zawiera ekrany i layouty Expo Router.
+- `src/services/` realizuje operacje Firebase.
+- `src/domain/` zawiera czystą logikę biznesową.
+- `src/models/` definiuje encje TypeScript.
+- `src/components/` zawiera komponenty współdzielone.
+- `src/components/ui/` stanowi własny design system.
+- `src/theme/` definiuje palety, spacing, typografię i cienie.
+
+## Dane Firestore
+
+Aplikacja używa kolekcji:
+
+- `users`;
+- `Subjects`;
+- `Groups`;
+- `Lessons`;
+- `Tasks`;
+- `Attendance`;
+- `Messages`;
+- `Notifications`;
+- `ContentItems`.
+
+Nowe pola są obsługiwane przez konwertery z wartościami domyślnymi. Repozytorium nie zawiera automatycznego skryptu migracji ani backfillu.
+
+## Testy i kontrola jakości
+
+Aktualny zestaw testów obejmuje:
+
+- obliczanie średnich ocen;
+- statystyki frekwencji;
+- czas trwania lekcji;
+- wykrywanie konfliktów lekcji.
+
+Uruchomienie pełnej kontroli:
 
 ```bash
-npm start          # serwer deweloperski Expo
-npm run android    # build natywny Android (wymaga Android Studio)
-npm run ios        # build natywny iOS (wymaga Xcode, tylko macOS)
-npm run web        # wersja webowa
-npm run typecheck  # tsc --noEmit
-npm run test       # testy Jest
+npm run typecheck
+npm test -- --runInBand
+npm run build
 ```
 
-## 🧪 Testy
+Stan potwierdzony podczas audytu z 13 czerwca 2026:
 
-Testy pokrywają warstwę logiki domenowej (`src/domain/`): obliczanie średnich ocen, statystyki frekwencji, czas trwania i konflikty lekcji.
+- TypeScript przechodzi bez błędów;
+- 3 zestawy Jest i 10 testów przechodzą;
+- statyczny eksport Web kończy się sukcesem.
 
-```bash
-npm run test
-```
+Nie ma automatycznych testów ekranów, integracji Firebase, testów end-to-end ani aktywnego workflow CI. Scenariusze ręcznej weryfikacji reguł znajdują się w `mobile-app/FIRESTORE_RULES_TESTS.md`.
 
-## 📚 Dokumentacja dodatkowa
+## Znane ograniczenia
 
-- [CHANGELOG.md](CHANGELOG.md) — pełna historia zmian per moduł
-- [DATA_MIGRATIONS.md](DATA_MIGRATIONS.md) — migracje i nowe pola danych
-- [FIRESTORE_RULES_TESTS.md](FIRESTORE_RULES_TESTS.md) — scenariusze testowe reguł
-- [PUSH_INTEGRATION.md](PUSH_INTEGRATION.md) — plan integracji powiadomień push
+- Projekt używa alertów wewnątrz aplikacji, bez powiadomień push.
+- Nie ma własnego backendu HTTP ani Cloud Functions.
+- Migracje Firestore wymagają ręcznego backfillu.
+- Eksport Web zgłasza ostrzeżenie dotyczące wpisu `(shared)` w root layout.
+- Reguły Firestore nie mają automatycznych testów.
+- Projekt iOS i katalog `dist` są generowane lokalnie i ignorowane przez Git.
+- Katalog Android prebuild nie jest przechowywany w repozytorium.
+
+## Dokumentacja
+
+- [Audyt projektu](AUDYT_PROJEKTU.md)
+- [README aplikacji](mobile-app/README.md)
+- [Scenariusze testowe reguł Firestore](mobile-app/FIRESTORE_RULES_TESTS.md)

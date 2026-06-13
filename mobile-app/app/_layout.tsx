@@ -10,7 +10,6 @@ import {
   type Theme as NavTheme,
 } from "@react-navigation/native";
 import { useTheme } from "@/src/theme/useTheme";
-import { setupForegroundNotifications } from "@/src/services/notificationsApi";
 import BottomAppMenu from "@/src/components/Navigation/BottomAppMenu";
 
 SplashScreen.preventAutoHideAsync();
@@ -30,10 +29,6 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
-
-  useEffect(() => {
-    setupForegroundNotifications();
-  }, []);
 
   if (!loaded) {
     return null;
