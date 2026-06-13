@@ -30,7 +30,6 @@ import { auth } from "@/FirebaseConfig";
 import SafeAreaContainer from "@/src/components/SafeAreaContainer";
 import { Button, TextField } from "@/src/components/ui";
 import { pickAndUploadAvatar } from "@/src/services/profileMediaApi";
-import { registerPushToken } from "@/src/services/notificationsApi";
 import { floatingTabBar } from "@/src/theme/layout";
 import { useTheme } from "@/src/theme/useTheme";
 
@@ -138,23 +137,6 @@ const Profile = () => {
     }
   };
 
-  const handlePush = async () => {
-    if (!auth.currentUser) return;
-    if (Platform.OS === "web") {
-      Alert.alert("Powiadomienia", "Powiadomienia push są obsługiwane w aplikacji mobilnej.");
-      return;
-    }
-    try {
-      const token = await registerPushToken(auth.currentUser.uid);
-      Alert.alert(
-        "Powiadomienia",
-        token ? "Urządzenie zostało zarejestrowane." : "Nie przyznano uprawnień do powiadomień."
-      );
-    } catch {
-      Alert.alert("Błąd", "Nie udało się zarejestrować powiadomień.");
-    }
-  };
-
   const resetPasswordForm = () => {
     setCurrentPassword("");
     setNewPassword("");
@@ -236,10 +218,7 @@ const Profile = () => {
           <View style={styles.buttonView}>
             <Button title="Edytuj profil" onPress={() => setIsEditing(true)} />
             {userRole !== "guest" && (
-              <>
-                <Button title="Zmień zdjęcie profilowe" variant="soft" onPress={handleAvatar} />
-                <Button title="Włącz powiadomienia" variant="soft" onPress={handlePush} />
-              </>
+              <Button title="Zmień zdjęcie profilowe" variant="soft" onPress={handleAvatar} />
             )}
             {userRole !== "guest" && (
               <Button

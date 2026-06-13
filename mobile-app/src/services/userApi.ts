@@ -49,7 +49,6 @@ export const getCurrentUserData = async (): Promise<UserData> => {
         active: data.active ?? true,
         avatar: data.avatar ?? undefined,
         children: data.children ?? [],
-        pushTokens: Array.isArray(data.pushTokens) ? data.pushTokens : [],
       };
     } else {
       // Utwórz profil jeśli nie istnieje
@@ -131,7 +130,6 @@ export const getAllUsers = async (): Promise<UserData[]> => {
         active: data.active ?? true,
         avatar: data.avatar ?? undefined,
         children: data.children ?? [],
-        pushTokens: Array.isArray(data.pushTokens) ? data.pushTokens : [],
       });
     });
     return users;
@@ -159,7 +157,6 @@ export const getUserDataByUid = async (
         active: data.active ?? true,
         avatar: data.avatar ?? undefined,
         children: data.children ?? [],
-        pushTokens: Array.isArray(data.pushTokens) ? data.pushTokens : [],
       };
     } else {
       return null;

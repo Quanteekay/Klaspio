@@ -10,9 +10,9 @@ Nowe pola są obsługiwane w konwerterach z wartościami domyślnymi:
 
 Backfill można wykonać później z konsoli administracyjnej lub skryptem migracyjnym po ustaleniu mapowania starych `courseId` na dokumenty `Subjects`.
 
-## `users.pushTokens`, `users.avatar`
+## `users.avatar`
 
-Nowe pola są opcjonalne. Brak `pushTokens` oznacza brak zarejestrowanych urządzeń, a brak `avatar` powoduje pokazanie inicjałów użytkownika.
+Pole jest opcjonalne. Brak `avatar` powoduje pokazanie inicjałów użytkownika.
 
 ## Indeksy Firestore dla alertów
 
